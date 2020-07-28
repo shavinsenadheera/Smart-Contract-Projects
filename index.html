@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <!-- Font Awesome -->
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.2/css/all.css">
+        <!-- Google Fonts -->
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap">
+        <!-- Bootstrap core CSS -->
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/css/bootstrap.min.css" rel="stylesheet">
+        <!-- Material Design Bootstrap -->
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.19.1/css/mdb.min.css" rel="stylesheet">
+
+        <link rel="stylesheet" href="./main.css">
+
+        <script src="./node_modules/web3/dist/web3.min.js"></script>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
+
+    </head>
+    <body style="overflow-x: hidden">
+        <div class="row">
+            <div class="container-fluid bg-light text-center overflow-hidden">
+                <h1 class="text-danger font-weight-bolder">University of rabBIT</h1>
+            </div>
+            <div class="card container text-center overflow-hidden">
+                <div class="card-body">
+                    <h2 class="card-title font-weight-bold">Course Instructors (Total Instructors: <span class="text-warning" id="count"></span>)</h2>
+                    <h6 class="font-weight-bolder" style="color:#c7c7c7" id="instructor"></h6>
+                    <div class="card-text row">
+                        <div class="mt-4 p-4 col-md-12 bg-dark text-center text-info">
+                            <label for="name" class="col-lg-2 control-label">ID</label><br>
+                            <input id="id" type="text" class="form-control border-0">
+                            <br>
+                            <label for="name" class="col-lg-2 control-label">Name</label><br>
+                            <input id="username" type="text" class="form-control">
+                            <br>
+                            <br>
+                            <button id="update" class="btn btn-info border-0">Update Instructor</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container col-md-6 text-center">
+                <div id="alerttx" class="alert alert-success" role="alert">
+                    <strong>Hey!</strong><span id="msg"></span>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="d-flex justify-content-center">
+                    <div id="loaderImage"></div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            $(window).load(function() {
+                // Animate loader off screen
+                $("#loaderImage").animate({
+                    top: -200
+                }, 1500);
+            });
+
+            $(document).ready(function(){
+                $('#alerttx').hide();
+                $('#loaderImage').hide();
+
+                if(typeof web3 !== 'undefined')
+                {
+                    web3 = new Web3(web3.currentProvider);
+                }
+                else
+                {
+                    web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"))
+                }
+
+                web3.eth.defaultAccount = web3.eth.accounts[0];
+
+                var contract1 = new web3.eth.Contract([
+                    {
+                        "constant": false,
+                        "inputs": [
+                            {
+                                "name": "_id",
+                                "type": "uint256"
+                            },
+                            {
+                                "name": "_name",
+                                "type": "string"
+                            }
+                        ],
+                        "name": "addInstructor",
+                        "outputs": [],
+                        "payable": false,
+                        "stateMutability": "nonpayable",
+                        "type": "function"
+                    },
+                    {
+                        "inputs": [],
+                        "payable": false,
+                        "stateMutability": "nonpayable",
+                        "type": "constructor"
+                    },
+                    {
+                        "anonymous": false,
+                        "inputs": [
+                            {
+                                "indexed": false,
+                                "name": "_count",
+                                "type": "uint256"
+                            },
+                            {
+                                "indexed": false,
+                                "name": "_id",
+                                "type": "uint256"
+                            },
+                            {
+                                "indexed": false,
+                                "name": "_name",
+                                "type": "string"
+                            }
+                        ],
+                        "name": "instructor",
+                        "type": "event"
+                    },
+                    {
+                        "constant": true,
+                        "inputs": [],
+                        "name": "getnoof",
+                        "outputs": [
+                            {
+                                "name": "",
+                                "type": "uint256"
+                            }
+                        ],
+                        "payable": false,
+                        "stateMutability": "view",
+                        "type": "function"
+                    }
+                ], '0x7B19051168A2a243b5a280CF23EBC2D802E2d60f');
+
+
+                contract1.methods.getnoof().call(function (error, result) {
+                    if(!error)
+                    {
+                        $('#count').html(result);
+                    }
+                    else
+                    {
+                        console.log(error);
+                    }
+                })
+
+                //Calling the Get Instructor method for getting details about the instructor
+                contract1.getPastEvents('instructor', function(error, result){
+                   if(!error)
+                   {
+                       $('#loaderImage').hide();
+                       console.log(result);
+                       $('#instructor').html("Main ID : "+result[0].returnValues[0]+" ,Name : " + result[0].returnValues[2] + " , ID : " + result[0].returnValues[1]);
+
+                   }
+                   else
+                   {
+                       $('#loaderImage').hide();
+                       alert(error);
+                   }
+                });
+
+                //Calling add instructor and get instructor method correctly to getting live update of the website using update button
+                $('#update').click(function(){
+                    var id = parseInt($('#id').val());
+                    var user = $('#username').val();
+
+                    if(id=="" || user=="")
+                    {
+                        $('#msg').html(" Please fill the form first!");
+                        $("#alerttx").fadeTo(2000, 500).slideUp(1000, function () {
+                            $("#alerttx").slideUp(1000);
+                        });
+                    }
+                    else
+                    {
+                        $('#loaderImage').show();
+                        web3.eth.getAccounts().then(function (accounts) {
+                            var acc = accounts[0];
+                            return contract1.methods.addInstructor(id, user).send({from: acc});
+                        }).then(function (tx) {
+                            contract1.getPastEvents('instructor', function (error, result) {
+                                if (!error) {
+                                    $('#loaderImage').hide();
+                                    console.log(result);
+                                    $('#instructor').html("Main ID : "+result[0].returnValues[0]+" ,Name : " + result[0].returnValues[2] + " , ID : " + result[0].returnValues[1]);
+
+                                } else {
+                                    $('#loaderImage').hide();
+                                    alert(error);
+                                }
+                            });
+                            $('#msg').html(" Perefectly updated the ledger!");
+                            $("#alerttx").fadeTo(2000, 500).slideUp(500, function () {
+                                $("#alerttx").slideUp(500);
+                            });
+                        }).catch(function (tx) {
+                            alert("You are not owner of the contract! Access Denied!");
+                            $('#loaderImage').hide();
+                        });
+                    }
+
+                });
+
+
+            });
+
+        </script>
+
+        <!-- JQuery -->
+
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <!-- Bootstrap tooltips -->
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.4/umd/popper.min.js"></script>
+        <!-- Bootstrap core JavaScript -->
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/js/bootstrap.min.js"></script>
+        <!-- MDB core JavaScript -->
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.19.1/js/mdb.min.js"></script>
+
+
+        <script type="text/javascript">
+            var cSpeed=4;
+            var cWidth=94;
+            var cHeight=94;
+            var cTotalFrames=30;
+            var cFrameWidth=94;
+            var cImageSrc='images/sprites.gif';
+
+            var cImageTimeout=false;
+            var cIndex=0;
+            var cXpos=0;
+            var cPreloaderTimeout=false;
+            var SECONDS_BETWEEN_FRAMES=0;
+
+            function startAnimation(){
+
+                document.getElementById('loaderImage').style.backgroundImage='url('+cImageSrc+')';
+                document.getElementById('loaderImage').style.width=cWidth+'px';
+                document.getElementById('loaderImage').style.height=cHeight+'px';
+
+                //FPS = Math.round(100/(maxSpeed+2-speed));
+                FPS = Math.round(100/cSpeed);
+                SECONDS_BETWEEN_FRAMES = 1 / FPS;
+
+                cPreloaderTimeout=setTimeout('continueAnimation()', SECONDS_BETWEEN_FRAMES/1000);
+
+            }
+
+            function continueAnimation(){
+
+                cXpos += cFrameWidth;
+                //increase the index so we know which frame of our animation we are currently on
+                cIndex += 1;
+
+                //if our cIndex is higher than our total number of frames, we're at the end and should restart
+                if (cIndex >= cTotalFrames) {
+                    cXpos =0;
+                    cIndex=0;
+                }
+
+                if(document.getElementById('loaderImage'))
+                    document.getElementById('loaderImage').style.backgroundPosition=(-cXpos)+'px 0';
+
+                cPreloaderTimeout=setTimeout('continueAnimation()', SECONDS_BETWEEN_FRAMES*1000);
+            }
+
+            function stopAnimation(){//stops animation
+                clearTimeout(cPreloaderTimeout);
+                cPreloaderTimeout=false;
+            }
+
+            function imageLoader(s, fun)//Pre-loads the sprites image
+            {
+                clearTimeout(cImageTimeout);
+                cImageTimeout=0;
+                genImage = new Image();
+                genImage.onload=function (){cImageTimeout=setTimeout(fun, 0)};
+                genImage.onerror=new Function('alert(\'Could not load the image\')');
+                genImage.src=s;
+            }
+
+            //The following code starts the animation
+            new imageLoader(cImageSrc, 'startAnimation()');
+        </script>
+
+
+    </body>
+</html>
